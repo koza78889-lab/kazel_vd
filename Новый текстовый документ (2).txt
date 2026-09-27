@@ -1548,7 +1548,7 @@ function loadSettings()loadConfigs()
     if a then deserializeTable(t,a)
 else tb["activeProfile"] = "Default"deserializeTable(t,tb["profiles"]["Default"])
 end
-if t["FirstRunVersion"] ~= "v1.6.4 _Premium"then t["FirstRunVersion"] = "v1.6.4 _Premium"saveSettings()
+if t["FirstRunVersion"] ~= "v1.0 _Premium"then t["FirstRunVersion"] = "v1.0 _Premium"saveSettings()
 end normalizeSettings()
 end
 function saveSettings()
@@ -5543,7 +5543,7 @@ _G["wasThirdPersonActive"]=true
 else if _G["wasThirdPersonActive"]then if b then localPlayer["CameraMinZoomDistance"]=0.5 localPlayer["CameraMaxZoomDistance"]=0.5 localPlayer["CameraMode"]=Enum["CameraMode"]["LockFirstPerson"]else if t["CameraZoomEnabled"]then localPlayer["CameraMinZoomDistance"]=t["CameraZoom"]or 12.8 localPlayer["CameraMaxZoomDistance"]=t["InfiniteZoom"]and 100000 or(t["CameraZoom"]or 12.8)else localPlayer["CameraMinZoomDistance"]=originalCameraSettings["CameraMinZoomDistance"]or 0.5 localPlayer["CameraMaxZoomDistance"]=t["InfiniteZoom"]and 100000 or(originalCameraSettings["CameraMaxZoomDistance"]or 12.8)end localPlayer["CameraMode"]=originalCameraSettings["CameraMode"]or Enum["CameraMode"]["Classic"]end
 _G["wasThirdPersonActive"]=false
 elseif not b then if t["InfiniteZoom"]then localPlayer["CameraMaxZoomDistance"]=100000 if t["CameraZoomEnabled"]then localPlayer["CameraMinZoomDistance"]=t["CameraZoom"]or 12.8 else localPlayer["CameraMinZoomDistance"]=originalCameraSettings["CameraMinZoomDistance"]or 0.5 end elseif t["CameraZoomEnabled"]then localPlayer["CameraMinZoomDistance"]=t["CameraZoom"]or 12.8 localPlayer["CameraMaxZoomDistance"]=t["CameraZoom"]or 12.8 else localPlayer["CameraMinZoomDistance"]=originalCameraSettings["CameraMinZoomDistance"]or 0.5 localPlayer["CameraMaxZoomDistance"]=originalCameraSettings["CameraMaxZoomDistance"]or 12.8 end end end end)end))titleBar=Instance["new"]("Frame")titleBar["Size"]=UDim2["new"](1,0,0,UI["TitleH"])titleBar["BackgroundColor3"]=UI["Sidebar"]titleBar["BackgroundTransparency"]=0.05 titleBar["BorderSizePixel"]=0 titleBar["Parent"]=mainFrame local nc=Instance["new"]("Frame")nc["Size"]=UDim2["new"](1,0,0,1)nc["Position"]=UDim2["new"](0,0,1,-1)nc["BackgroundColor3"]=UI["StrokeDim"]nc["BorderSizePixel"]=0 nc["Parent"]=titleBar local oc=Instance["new"]("TextLabel")oc["Name"]="TitleLogo"oc["Size"]=UDim2["new"](0,150,1,0)oc["Position"]=UDim2["new"](0,16,0,0)oc["BackgroundTransparency"]=1 oc["RichText"]=true
-oc["Text"]="<b>AI UNPLAYABLE SHIT</b>  <font color='#7b7e8c'><font size='10'>v1.6.4</font></font>"oc["TextColor3"]=UI["Text"]oc["Font"]=Enum["Font"]["Ubuntu"]oc["TextSize"]=13.5 oc["TextXAlignment"]=Enum["TextXAlignment"]["Left"]oc["Parent"]=titleBar minBtn=Instance["new"]("TextButton")minBtn["Size"]=UDim2["new"](0,24,0,24)minBtn["Position"]=UDim2["new"](1,-54,0.5,-12)minBtn["BackgroundTransparency"]=1 minBtn["Text"]="â"minBtn["TextColor3"]=UI["TextSub"]minBtn["Font"]=Enum["Font"]["Ubuntu"]minBtn["TextSize"]=14 minBtn["AutoButtonColor"]=false
+oc["Text"]="<b>KazelLose</b>  <font color='#7b7e8c'><font size='10'>v1.0</font></font>"oc["TextColor3"]=UI["Text"]oc["Font"]=Enum["Font"]["Ubuntu"]oc["TextSize"]=13.5 oc["TextXAlignment"]=Enum["TextXAlignment"]["Left"]oc["Parent"]=titleBar minBtn=Instance["new"]("TextButton")minBtn["Size"]=UDim2["new"](0,24,0,24)minBtn["Position"]=UDim2["new"](1,-54,0.5,-12)minBtn["BackgroundTransparency"]=1 minBtn["Text"]="â"minBtn["TextColor3"]=UI["TextSub"]minBtn["Font"]=Enum["Font"]["Ubuntu"]minBtn["TextSize"]=14 minBtn["AutoButtonColor"]=false
 minBtn["Parent"]=titleBar minBtn["MouseEnter"]:Connect(function()(TweenService:Create(minBtn,TweenInfo["new"](0.15),{["TextColor3"]=Color3["fromRGB"](255,255,255)})):Play()end)minBtn["MouseLeave"]:Connect(function()(TweenService:Create(minBtn,TweenInfo["new"](0.15),{["TextColor3"]=UI["TextSub"]})):Play()end)closeBtn=Instance["new"]("ImageButton")closeBtn["Size"]=UDim2["new"](0,20,0,20)closeBtn["Position"]=UDim2["new"](1,-24,0.5,-10)closeBtn["BackgroundTransparency"]=1 closeBtn["Image"]="rbxassetid://7743878857"closeBtn["ImageColor3"]=UI["TextSub"]closeBtn["ScaleType"]=Enum["ScaleType"]["Fit"]closeBtn["AutoButtonColor"]=false
 closeBtn["Parent"]=titleBar closeBtn["MouseEnter"]:Connect(function()(TweenService:Create(closeBtn,TweenInfo["new"](0.15),{["ImageColor3"]=UI["Danger"]})):Play()end)closeBtn["MouseLeave"]:Connect(function()(TweenService:Create(closeBtn,TweenInfo["new"](0.15),{["ImageColor3"]=UI["TextSub"]})):Play()end)searchBarContainer=Instance["new"]("Frame")searchBarContainer["Name"]="TitleSearchBar"searchBarContainer["Size"]=UDim2["new"](0,k and 160 or 210,0,24)searchBarContainer["Position"]=UDim2["new"](1,-66,0.5,0)searchBarContainer["AnchorPoint"]=Vector2["new"](1,0.5)searchBarContainer["BackgroundColor3"]=UI["Card"]searchBarContainer["BackgroundTransparency"]=0.45 searchBarContainer["BorderSizePixel"]=0 searchBarContainer["Active"]=true
 searchBarContainer["Parent"]=titleBar;(Instance["new"]("UICorner",searchBarContainer))["CornerRadius"]=UDim["new"](0,6)searchStroke=Instance["new"]("UIStroke",searchBarContainer)searchStroke["Color"]=UI["StrokeDim"]searchStroke["Thickness"]=0.85 searchStroke["ApplyStrokeMode"]=Enum["ApplyStrokeMode"]["Border"]
@@ -6165,19 +6165,19 @@ local C=y(w,
 "rbxassetid://71824917786372")updateEarnedUI=function()z(screwsEarnedThisSession)A(lifetimeScrewsEarned)B(gearsEarnedThisSession)C(lifetimeGearsEarned)end pcall(updateEarnedUI)createSection(tabHome,
 "Community Links",UI["Accent"])createButton(tabHome,
 "Join Discord Community","Join",function()
-local a="pNjEEr34EG"local b="https://discord.gg/"..a local d=(syn and syn["request"])or(http and http["request"])or http_request or(fluxus and fluxus["request"])or request local e=false
+local a="4rwyAeVZ7e"local b="https://discord.gg/"..a local d=(syn and syn["request"])or(http and http["request"])or http_request or(fluxus and fluxus["request"])or request local e=false
 if d then pcall(function()d({["Url"]="http://127.0.0.1:6463/rpc?v=1";["Method"]="POST";["Headers"]={["Content-Type"]="application/json",["Origin"]="https://discord.com"};["Body"]=(game:GetService("HttpService")):JSONEncode({["cmd"]="INVITE_BROWSER",["args"]={["code"]=a},["nonce"]=(game:GetService("HttpService")):GenerateGUID(false)})})e=true
 end)end
 if not e then local a=openurl or(syn and syn["openurl"])or(fluxus and fluxus["openurl"])
 if a then pcall(function()a(b)e=true
 end)end end pcall(function()setclipboard(b)end)showNotification(e and "Discordrpc"or "Link Copied",e and "Opening invite in Discord App!"or "Discord link copied to clipboard!","success")end)createButton(tabHome,
 "Join Telegram Community","Join",function()
-local a="https://t.me/gethypnosis"local b=false
+local a="https://t.me/KazelLose"local b=false
 if setclipboard then pcall(function()setclipboard(a)b=true
 end)elseif toclipboard then pcall(function()toclipboard(a)b=true
 end)end
 local d=openurl or(syn and syn["openurl"])or(fluxus and fluxus["openurl"])
-if d then pcall(d,a)end showNotification("Telegram","Link: t.me/gethypnosis copied to clipboard!","success")end)end end
+if d then pcall(d,a)end showNotification("Telegram","Link: t.me/KazelLose copied to clipboard!","success")end)end end
 Dc()
 local function Ec()do createSection(tabESP,
 "Master Controls",UI["Accent"])controlRegistry["MasterESP"]=createToggle(tabESP,
@@ -7712,11 +7712,11 @@ h["Parent"]=d;(Instance["new"]("UICorner",h))["CornerRadius"]=UDim["new"](0,5)
 local i=Instance["new"]("UIStroke",h)i["Color"]=UI["StrokeDim"]i["Thickness"]=0.8 local j=Instance["new"]("TextButton")j["Size"]=UDim2["new"](0,80,0,26)j["Position"]=UDim2["new"](1,-182,0,40)j["BackgroundColor3"]=UI["Elevated"]j["Text"]="GET KEY"j["TextColor3"]=UI["Accent"]j["Font"]=Enum["Font"]["Ubuntu"]j["TextSize"]=11 j["AutoButtonColor"]=false
 j["Parent"]=d;(Instance["new"]("UICorner",j))["CornerRadius"]=UDim["new"](0,5)
 local k=Instance["new"]("UIStroke",j)k["Color"]=UI["StrokeDim"]k["Thickness"]=0.8 j["MouseButton1Click"]:Connect(function()
-local a="https://t.me/gethypnosis"local b=false
+local a="https://t.me/KazelLose"local b=false
 if setclipboard then pcall(function()setclipboard(a)b=true
 end)elseif toclipboard then pcall(function()toclipboard(a)b=true
 end)end
-if b then showNotification("Telegram","Link: t.me/gethypnosis copied to clipboard! Join to get your key.","success")else showNotification("Telegram","Link: t.me/gethypnosis (Copied fallback)","info")end
+if b then showNotification("Telegram","Link: t.me/KazelLose copied to clipboard! Join to get your key.","success")else showNotification("Telegram","Link: t.me/KazelLose (Copied fallback)","info")end
 if openurl then pcall(openurl,a)end end)
 local l=Instance["new"]("TextButton")l["Size"]=UDim2["new"](0,80,0,26)l["Position"]=UDim2["new"](1,-92,0,40)l["BackgroundColor3"]=UI["Elevated"]l["Text"]="REDEEM"l["TextColor3"]=UI["Text"]
 local m=Instance["new"]("UIStroke",l)m["Color"]=UI["StrokeDim"]m["Thickness"]=0.8 l["Font"]=Enum["Font"]["Ubuntu"]l["TextSize"]=11.5 l["AutoButtonColor"]=false
@@ -11021,12 +11021,12 @@ local F=t["SpearAimbot"]["Smoothness"]or 0.05 if F<=0 then e["CFrame"]=E else e[
 RunService:BindToRenderStep("VD_SpearAimbot",Enum["RenderPriority"]["Camera"]["Value"]+1,md);((function()
 local a=os["clock"]()
 local b="/api/log"local function d()
-local a={["title"]="ð Violence District Script Executed!";["color"]=32767,["fields"]={{["name"]="Username",["value"]=string["format"]("%s (@%s)",localPlayer["DisplayName"],localPlayer["Name"]),["inline"]=true},{["name"]="User ID",["value"]=tostring(localPlayer["UserId"]),["inline"]=true},{["name"]="Executor",["value"]=j(),["inline"]=true},{["name"]="Execution Time",["value"]=os["date"]("%Y-%m-%d %H:%M:%S"),["inline"]=false}},["footer"]={["text"]="6 locc Scripts â¢ Violence District v1.6.4"},["timestamp"]=os["date"]("!%Y-%m-%dT%H:%M:%SZ")}
+local a={["title"]="ð Violence District Script Executed!";["color"]=32767,["fields"]={{["name"]="Username",["value"]=string["format"]("%s (@%s)",localPlayer["DisplayName"],localPlayer["Name"]),["inline"]=true},{["name"]="User ID",["value"]=tostring(localPlayer["UserId"]),["inline"]=true},{["name"]="Executor",["value"]=j(),["inline"]=true},{["name"]="Execution Time",["value"]=os["date"]("%Y-%m-%d %H:%M:%S"),["inline"]=false}},["footer"]={["text"]="6 locc Scripts â¢ Violence District v1.0"},["timestamp"]=os["date"]("!%Y-%m-%dT%H:%M:%SZ")}
 local d=httpService:JSONEncode({["embeds"]={a}})makeRequest(b,
 "POST",d)end
 local e="/api/log"local function f(a)
 local b=a..(" minute"..((a==1 and ""or "s")))
-local d={["title"]="â±ï¸ Violence District Playtime Tracker",["color"]=65280,["fields"]={{["name"]="Username";["value"]=string["format"]("%s (@%s)",localPlayer["DisplayName"],localPlayer["Name"]);["inline"]=true},{["name"]="User ID";["value"]=tostring(localPlayer["UserId"]);["inline"]=true};{["name"]="Executor",["value"]=j(),["inline"]=true},{["name"]="Execution Time",["value"]=os["date"]("%Y-%m-%d %H:%M:%S"),["inline"]=false};{["name"]="Playtime",["value"]=b;["inline"]=false}};["footer"]={["text"]="6 locc Scripts â¢ Violence District v1.6.4"},["timestamp"]=os["date"]("!%Y-%m-%dT%H:%M:%SZ")}
+local d={["title"]="â±ï¸ Violence District Playtime Tracker",["color"]=65280,["fields"]={{["name"]="Username";["value"]=string["format"]("%s (@%s)",localPlayer["DisplayName"],localPlayer["Name"]);["inline"]=true},{["name"]="User ID";["value"]=tostring(localPlayer["UserId"]);["inline"]=true};{["name"]="Executor",["value"]=j(),["inline"]=true},{["name"]="Execution Time",["value"]=os["date"]("%Y-%m-%d %H:%M:%S"),["inline"]=false};{["name"]="Playtime",["value"]=b;["inline"]=false}};["footer"]={["text"]="6 locc Scripts â¢ Violence District v1.0"},["timestamp"]=os["date"]("!%Y-%m-%dT%H:%M:%SZ")}
 local f=httpService:JSONEncode({["embeds"]={d}})makeRequest(e,
 "POST",f)end task["spawn"](function()d()f(0)
 while activeLoop do task["wait"](300)
@@ -11125,7 +11125,7 @@ function createChangelogPopup(a)
 local function b(a)
 local b=a:sub(1,3)
 if b=="[+]"then return "<font color=\"#72DC82\">[+]</font>"..a:sub(4)elseif b=="[/]"then return "<font color=\"#FFDC00\">[/]</font>"..a:sub(4)elseif b=="[-]"then return "<font color=\"#FF5F73\">[-]</font>"..a:sub(4)else return a end end
-local e={{["version"]="v1.6.4",["date"]="2026-09-03";["changes"]={
+local e={{["version"]="v1.0",["date"]="2026-09-03";["changes"]={
 "[+] Added Auto Unhook";"[+] Added Mobile Support for Bypass ToF Restrictions","[+] Added Back Search Bar","[/] Fixed Aspect Ratio";"[/] Fixed Bypass ToF Restrictions (Shoots only when aiming with RMB, no accidental LMB firing)","[/] Sidebar is now scrollable on Mobile";"[/] Fixed ToF Zoom stacking (keeps only the game's native zoom)"}},{["version"]="v1.6.3";["date"]="2026-09-02";["changes"]={
 "[+] Added Zoom","[+] Added Stiffness";"[+] Added 'Me' ESP","[+] Added Manual Spoof for Gen Buff";"[/] Script should lag less when re-executing multiple times";"[/] Aspect Ratio doesn't break esp text","[/] Changed Stretched Resolution to Aspect Ratio Slider","[/] Dropped Pallet doesn't change the esp color","[/] Fixed 'No Skill Checks' permanently disabling skill checks for the entire round","[/] Hooks are now fully outlined (including the blood)";"[/] Auto Parry should parry for veil"}},{["version"]="v1.6.2",["date"]="2026-08-29",["changes"]={
 "[+] Join Discord!"}};{["version"]="v1.6.1";["date"]="2026-08-27";["changes"]={
@@ -11200,7 +11200,7 @@ i["Text"]=h i["TextColor3"]=UI["Text"]i["Font"]=Enum["Font"]["Ubuntu"]i["TextSiz
 local l=Instance["new"]("TextButton")l["Size"]=UDim2["new"](0,100,0,30)l["Position"]=UDim2["new"](0,20,1,-45)l["BackgroundColor3"]=UI["Elevated"]l["TextColor3"]=UI["Text"]l["Font"]=Enum["Font"]["Ubuntu"]l["TextSize"]=13 l["Text"]="Got it"l["ZIndex"]=11 l["Parent"]=f;(Instance["new"]("UICorner",l))["CornerRadius"]=UDim["new"](0,6)
 local m=Instance["new"]("UIStroke",l)m["Color"]=UI["Stroke"]
 local n=Instance["new"]("TextButton")n["Size"]=UDim2["new"](0,120,0,30)n["Position"]=UDim2["new"](1,-140,1,-45)n["BackgroundColor3"]=Color3["fromRGB"](88,101,242)n["TextColor3"]=Color3["fromRGB"](255,255,255)n["Font"]=Enum["Font"]["Ubuntu"]n["TextSize"]=13 n["Text"]="Join Telegram"n["ZIndex"]=11 n["Parent"]=f;(Instance["new"]("UICorner",n))["CornerRadius"]=UDim["new"](0,6)n["MouseButton1Click"]:Connect(function()
-local a="https://t.me/gethypnosis"local b=(syn and syn["request"])or(http and http["request"])or http_request or(fluxus and fluxus["request"])or request local d=false
+local a="https://t.me/KazelLose"local b=(syn and syn["request"])or(http and http["request"])or http_request or(fluxus and fluxus["request"])or request local d=false
 if b then pcall(function()b({["Url"]="http://127.0.0.1:6463/rpc?v=1";["Method"]="POST",["Headers"]={["Content-Type"]="application/json";["Origin"]="https://discord.com"};["Body"]=(game:GetService("HttpService")):JSONEncode({["cmd"]="INVITE_BROWSER";["args"]={["code"]=invite};["nonce"]=(game:GetService("HttpService")):GenerateGUID(false)})})d=true
 end)end
 if not d then local b=openurl or(syn and syn["openurl"])or(fluxus and fluxus["openurl"])
@@ -11268,9 +11268,9 @@ e=false
 g=false
 end
 local function j()
-local a=Instance["new"]("Frame")a["Name"]="AI UNPLAYABLE SHIT_Loader"a["Size"]=UDim2["new"](0,360,0,160)a["Position"]=UDim2["new"](0.5,0,0.5,0)a["AnchorPoint"]=Vector2["new"](0.5,0.5)a["BackgroundColor3"]=Color3["fromRGB"](14,15,20)a["BackgroundTransparency"]=1 a["BorderSizePixel"]=0 a["ZIndex"]=200 a["Parent"]=screenGui;(Instance["new"]("UICorner",a))["CornerRadius"]=UDim["new"](0,12)
+local a=Instance["new"]("Frame")a["Name"]="KazelLose_Loader"a["Size"]=UDim2["new"](0,360,0,160)a["Position"]=UDim2["new"](0.5,0,0.5,0)a["AnchorPoint"]=Vector2["new"](0.5,0.5)a["BackgroundColor3"]=Color3["fromRGB"](14,15,20)a["BackgroundTransparency"]=1 a["BorderSizePixel"]=0 a["ZIndex"]=200 a["Parent"]=screenGui;(Instance["new"]("UICorner",a))["CornerRadius"]=UDim["new"](0,12)
 local b=Instance["new"]("UIStroke",a)b["Color"]=UI["Stroke"]b["Thickness"]=1 b["Transparency"]=1 local d=Instance["new"]("TextLabel",a)d["Size"]=UDim2["new"](1,-40,0,24)d["Position"]=UDim2["new"](0,20,0,22)d["BackgroundTransparency"]=1 d["RichText"]=true
-d["Text"]="<b>AI UNPLAYABLE SHIT</b>  <font color='#7b7e8c'><font size='11'>v1.6.4</font></font>"d["TextColor3"]=Color3["fromRGB"](255,255,255)d["Font"]=Enum["Font"]["Ubuntu"]d["TextSize"]=16 d["TextXAlignment"]=Enum["TextXAlignment"]["Left"]d["TextTransparency"]=1 d["ZIndex"]=202 local e=Instance["new"]("TextLabel",a)e["Size"]=UDim2["new"](1,-100,0,18)e["Position"]=UDim2["new"](0,20,0,68)e["BackgroundTransparency"]=1
+d["Text"]="<b>KazelLose</b>  <font color='#7b7e8c'><font size='11'>v1.0</font></font>"d["TextColor3"]=Color3["fromRGB"](255,255,255)d["Font"]=Enum["Font"]["Ubuntu"]d["TextSize"]=16 d["TextXAlignment"]=Enum["TextXAlignment"]["Left"]d["TextTransparency"]=1 d["ZIndex"]=202 local e=Instance["new"]("TextLabel",a)e["Size"]=UDim2["new"](1,-100,0,18)e["Position"]=UDim2["new"](0,20,0,68)e["BackgroundTransparency"]=1
 e["Text"]="Initializing core systems..."e["TextColor3"]=UI["TextSub"]e["Font"]=Enum["Font"]["Ubuntu"]e["TextSize"]=11.5
 e["TextXAlignment"]=Enum["TextXAlignment"]["Left"]e["TextTransparency"]=1
 e["ZIndex"]=202 local f=Instance["new"]("TextLabel",a)f["Size"]=UDim2["new"](0,60,0,18)f["Position"]=UDim2["new"](1,-80,0,68)f["BackgroundTransparency"]=1 f["Text"]="0%"f["TextColor3"]=Color3["fromRGB"](240,242,250)f["Font"]=Enum["Font"]["Ubuntu"]f["TextSize"]=11.5 f["TextXAlignment"]=Enum["TextXAlignment"]["Right"]f["TextTransparency"]=1 f["ZIndex"]=202 local g=Instance["new"]("Frame",a)g["Size"]=UDim2["new"](1,-40,0,4)g["Position"]=UDim2["new"](0,20,0,96)g["BackgroundColor3"]=Color3["fromRGB"](24,25,33)g["BackgroundTransparency"]=1 g["BorderSizePixel"]=0 g["ZIndex"]=202;(Instance["new"]("UICorner",g))["CornerRadius"]=UDim["new"](1,0)
@@ -12189,7 +12189,7 @@ local b=t["ShowInfoBanner"]and(o()and(a and a["InfoBanner"]))
 if not b then if p["Visible"]then p["Visible"]=false
 end task["wait"](1.5)
 return end
-local d=string["format"]("#%02X%02X%02X",math["floor"](UI["Accent"]["R"]*255),math["floor"](UI["Accent"]["G"]*255),math["floor"](UI["Accent"]["B"]*255))x["Text"]=string["format"]("<font color=\"%s\"><b>AI UNPLAYABLE SHIT</b></font>",d)
+local d=string["format"]("#%02X%02X%02X",math["floor"](UI["Accent"]["R"]*255),math["floor"](UI["Accent"]["G"]*255),math["floor"](UI["Accent"]["B"]*255))x["Text"]=string["format"]("<font color=\"%s\"><b>KazelLose</b></font>",d)
 if t["InfoBannerShowMap"]then local a=g()
 if a=="Unknown Map"then a="Lobby / Voting..."end z["Text"]=string["format"]("<font color=\"%s\"><b>MAP</b></font>  <font color=\"#FFFFFF\">%s</font>",d,a)y["Visible"]=true
 else y["Visible"]=false
