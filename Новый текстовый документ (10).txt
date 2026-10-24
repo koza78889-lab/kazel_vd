@@ -1,0 +1,191 @@
+-- GoatLose-style Box + Skeleton ESP (Drawing) | Killer / Survivor colors
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local LP = Players.LocalPlayer
+
+local COL_KILLER = Color3.fromRGB(255, 40, 40)
+local COL_SURV   = Color3.fromRGB(0, 255, 80)
+local COL_BOX    = Color3.fromRGB(0, 255, 0) -- fallback
+
+local BONES_R6 = {
+	{"Head","Torso"},{"Torso","Left Arm"},{"Torso","Right Arm"},
+	{"Torso","Left Leg"},{"Torso","Right Leg"},
+}
+local BONES_R15 = {
+	{"Head","UpperTorso"},{"UpperTorso","LowerTorso"},
+	{"UpperTorso","LeftUpperArm"},{"LeftUpperArm","LeftLowerArm"},{"LeftLowerArm","LeftHand"},
+	{"UpperTorso","RightUpperArm"},{"RightUpperArm","RightLowerArm"},{"RightLowerArm","RightHand"},
+	{"LowerTorso","LeftUpperLeg"},{"LeftUpperLeg","LeftLowerLeg"},{"LeftLowerLeg","LeftFoot"},
+	{"LowerTorso","RightUpperLeg"},{"RightUpperLeg","RightLowerLeg"},{"RightLowerLeg","RightFoot"},
+}
+
+local cache = {}
+
+local function isKiller(pl)
+	if not pl then return false end
+	local t = pl.Team
+	if t then
+		local n = t.Name:lower()
+		if n:find("killer") or n:find("hunter") or n:find("murderer")
+			or n:find("slasher") or n:find("maniac") then
+			return true
+		end
+		if n:find("surv") or n:find("innocent") or n:find("civilian") then
+			return false
+		end
+	end
+	if pl:GetAttribute("IsKiller") == true then return true end
+	local ch = pl.Character
+	if not ch then return false end
+	if ch:GetAttribute("IsKiller") == true then return true end
+	for _, w in ipairs({"Knife","Axe","Sword","Parrying Dagger","Machete","Bat","Weapon","Spear"}) do
+		if ch:FindFirstChild(w, true) then return true end
+	end
+	return false
+end
+
+local function colorFor(pl)
+	return isKiller(pl) and COL_KILLER or COL_SURV
+end
+
+local function newLine()
+	local l = Drawing.new("Line")
+	l.Thickness = 1.5
+	l.Transparency = 1
+	l.Visible = false
+	l.ZIndex = 2
+	return l
+end
+
+local function ensure(pl)
+	local e = cache[pl]
+	if e then return e end
+	e = { box = {}, lines = {}, name = Drawing.new("Text") }
+	for i = 1, 4 do e.box[i] = newLine() end
+	for i = 1, 14 do e.lines[i] = newLine() end
+	e.name.Size = 13
+	e.name.Center = true
+	e.name.Outline = true
+	e.name.OutlineColor = Color3.new(0, 0, 0)
+	e.name.Visible = false
+	cache[pl] = e
+	return e
+end
+
+local function hide(e)
+	if not e then return end
+	for i = 1, 4 do e.box[i].Visible = false end
+	for i = 1, 14 do e.lines[i].Visible = false end
+	e.name.Visible = false
+end
+
+local function wipe(pl)
+	local e = cache[pl]
+	if not e then return end
+	for i = 1, 4 do pcall(function() e.box[i]:Remove() end) end
+	for i = 1, 14 do pcall(function() e.lines[i]:Remove() end) end
+	pcall(function() e.name:Remove() end)
+	cache[pl] = nil
+end
+
+local function drawBox(e, x, y, w, h, col)
+	local x2, y2 = x + w, y + h
+	local pts = {
+		{Vector2.new(x, y),  Vector2.new(x2, y)},
+		{Vector2.new(x2, y), Vector2.new(x2, y2)},
+		{Vector2.new(x2, y2),Vector2.new(x, y2)},
+		{Vector2.new(x, y2), Vector2.new(x, y)},
+	}
+	for i = 1, 4 do
+		local ln = e.box[i]
+		ln.From = pts[i][1]
+		ln.To = pts[i][2]
+		ln.Color = col
+		ln.Visible = true
+	end
+end
+
+local function getRoot(ch)
+	return ch:FindFirstChild("HumanoidRootPart")
+		or ch:FindFirstChild("Torso")
+		or ch:FindFirstChild("UpperTorso")
+end
+
+local conn
+conn = RunService.RenderStepped:Connect(function()
+	local cam = Workspace.CurrentCamera
+	if not cam then return end
+
+	local seen = {}
+	for _, pl in ipairs(Players:GetPlayers()) do
+		if pl ~= LP then
+			seen[pl] = true
+			local e = ensure(pl)
+			local ch = pl.Character
+			local r = ch and getRoot(ch)
+			local hd = ch and ch:FindFirstChild("Head")
+			local hum = ch and ch:FindFirstChildOfClass("Humanoid")
+			if not (ch and r and hd) or (hum and hum.Health <= 0) then
+				hide(e)
+			else
+				local top = cam:WorldToViewportPoint(hd.Position + Vector3.new(0, 0.75, 0))
+				local bot = cam:WorldToViewportPoint(r.Position - Vector3.new(0, 3.0, 0))
+				if not (top.Z > 0 and bot.Z > 0) then
+					hide(e)
+				else
+					local col = colorFor(pl)
+					local h = math.abs(bot.Y - top.Y)
+					if h < 8 then h = 8 end
+					local w = h * 0.48
+					local x = top.X - w / 2
+					local y = top.Y
+					drawBox(e, x, y, w, h, col)
+
+					e.name.Text = pl.DisplayName ~= "" and pl.DisplayName or pl.Name
+					e.name.Color = Color3.new(1, 1, 1)
+					e.name.Position = Vector2.new(top.X, top.Y - 16)
+					e.name.Visible = true
+
+					local bones = ch:FindFirstChild("UpperTorso") and BONES_R15 or BONES_R6
+					for i = 1, 14 do
+						local ln = e.lines[i]
+						local pr = bones[i]
+						if pr then
+							local a = ch:FindFirstChild(pr[1])
+							local b = ch:FindFirstChild(pr[2])
+							if a and b then
+								local pa, va = cam:WorldToViewportPoint(a.Position)
+								local pb, vb = cam:WorldToViewportPoint(b.Position)
+								if va and vb and pa.Z > 0 and pb.Z > 0 then
+									ln.From = Vector2.new(pa.X, pa.Y)
+									ln.To = Vector2.new(pb.X, pb.Y)
+									ln.Color = col
+									ln.Visible = true
+								else
+									ln.Visible = false
+								end
+							else
+								ln.Visible = false
+							end
+						else
+							ln.Visible = false
+						end
+					end
+				end
+			end
+		end
+	end
+	for pl in pairs(cache) do
+		if not seen[pl] then wipe(pl) end
+	end
+end)
+
+Players.PlayerRemoving:Connect(wipe)
+
+_G.GLStyleESP_Stop = function()
+	if conn then conn:Disconnect() end
+	for pl in pairs(cache) do wipe(pl) end
+end
+
+print("[GL-Style ESP] on | Killer=red Surv=green | stop: _G.GLStyleESP_Stop()")
