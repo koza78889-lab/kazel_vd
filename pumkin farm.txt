@@ -1,0 +1,822 @@
+-- Violence District: ONLY PUMPKINS FOLDER + NO FREEZE LOOP + 10s SHIFT + KILLER AVOID
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local PathfindingService = game:GetService("PathfindingService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local VirtualUser = game:GetService("VirtualUser")
+local UserInputService = game:GetService("UserInputService")
+local ContextActionService = game:GetService("ContextActionService")
+local GuiService = game:GetService("GuiService")
+
+local LP = Players.LocalPlayer
+
+if _G.PumpkinFarm_Stop then
+	pcall(_G.PumpkinFarm_Stop)
+end
+
+local CFG = {
+	Enabled = true,
+	ReachDist = 1.35,          -- Дистанция наступания на тыкву
+	ClickCount = 5,            -- Кликов ЛКМ на тыкве
+	ClickDelay = 0.08,         -- Пауза между кликами[cite: 1]
+	WaypointTimeout = 1.2,     -- Таймаут на один шаг маршрута[cite: 1]
+	ScanInterval = 0.8,        -- Интервал проверки папки Pumpkins[cite: 1]
+	ShiftCycleInterval = 10.0, -- Перенажатие Shift каждые 10 секунд
+	KillerDangerDist = 35.0,   -- Дистанция срочного отхода от Killer
+	KillerAvoidDist = 48.0,    -- Радиус обхода тыкв возле Killer
+	ToggleKey = Enum.KeyCode.F6
+}
+
+local ESP_FOLDER = Instance.new("Folder")
+ESP_FOLDER.Name = "PumpkinESP"
+ESP_FOLDER.Parent = (gethui and gethui()) or game:GetService("CoreGui")
+
+local draws = {}      -- [model] = {hl, bill, lab}[cite: 1]
+local blacklist = {}  -- [model] = expireTime[cite: 1]
+local killerHL = nil
+local running = true
+
+-- ============================================================================
+-- 1. ПОЛНЫЙ АНТИ-АФК (НЕ КИКНЕТ ЗА 20 МИНУТ)
+-- ============================================================================
+if getconnections then
+	pcall(function()
+		for _, conn in ipairs(getconnections(LP.Idled)) do
+			if conn.Disable then
+				conn:Disable()
+			elseif conn.Disconnect then
+				conn:Disconnect()
+			end
+		end
+	end)
+end
+
+local idledConn = LP.Idled:Connect(function()
+	if not running then return end
+	pcall(function()
+		VirtualUser:CaptureController()
+		VirtualUser:ClickButton2(Vector2.new(0, 0))
+	end)
+end)
+
+-- ============================================================================
+-- 2. ЧИСТЫЙ ЗАЖИМ SHIFT + ПЕРЕНАЖАТИЕ КАЖДЫЕ 10 СЕКУНД (БЕЗ СПИДОВ)
+-- ============================================================================
+if hookmetamethod and getnamecallmethod then
+	pcall(function()
+		local oldNamecall
+		oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+			local method = getnamecallmethod()
+			if running and self == UserInputService then
+				if method == "IsKeyDown" then
+					local key = ...
+					if key == Enum.KeyCode.LeftShift or key == Enum.KeyCode.RightShift then
+						return true
+					end
+				elseif method == "GetFocusedTextBox" then
+					return nil
+				end
+			end
+			return oldNamecall(self, ...)
+		end)
+	end)
+end
+
+local function triggerCAS(state)
+	pcall(function()
+		local bound = ContextActionService:GetAllBoundActionInfo()
+		for actionName, info in pairs(bound) do
+			local low = string.lower(actionName)
+			if string.find(low, "sprint") or string.find(low, "run") or string.find(low, "shift") then
+				if info and info.functionToBind then
+					info.functionToBind(actionName, state, {
+						KeyCode = Enum.KeyCode.LeftShift,
+						UserInputType = Enum.UserInputType.Keyboard,
+						UserInputState = state
+					})
+				end
+			end
+		end
+	end)
+end
+
+local function sendShiftDown()
+	pcall(function()
+		local tb = UserInputService:GetFocusedTextBox()
+		if tb then tb:ReleaseFocus() end
+		GuiService.SelectedObject = nil
+	end)
+
+	if VirtualInputManager then
+		pcall(function()
+			VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.LeftShift, false, game)
+		end)
+	end
+
+	if keypress then
+		pcall(keypress, 0xA0)
+		pcall(keypress, 0x10)
+	end
+	if keydown then
+		pcall(keydown, 0xA0)
+		pcall(keydown, 0x10)
+	end
+
+	triggerCAS(Enum.UserInputState.Begin)
+
+	if getconnections then
+		pcall(function()
+			local fakeInput = {
+				KeyCode = Enum.KeyCode.LeftShift,
+				UserInputType = Enum.UserInputType.Keyboard,
+				UserInputState = Enum.UserInputState.Begin
+			}
+			for _, conn in ipairs(getconnections(UserInputService.InputBegan)) do
+				if conn.Function then
+					task.spawn(pcall, conn.Function, fakeInput, false)
+				end
+			end
+		end)
+	end
+end
+
+local function sendShiftUp()
+	if VirtualInputManager then
+		pcall(function()
+			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.LeftShift, false, game)
+		end)
+	end
+	if keyrelease then
+		pcall(keyrelease, 0xA0)
+		pcall(keyrelease, 0x10)
+	end
+	if keyup then
+		pcall(keyup, 0xA0)
+		pcall(keyup, 0x10)
+	end
+	triggerCAS(Enum.UserInputState.End)
+end
+
+local function cycleShiftPress()
+	if not running then return end
+	sendShiftUp()
+	task.wait(0.06)
+	if not running then return end
+	sendShiftDown()
+end
+
+task.spawn(function()
+	task.wait(0.2)
+	sendShiftDown()
+	while running do
+		task.wait(CFG.ShiftCycleInterval)
+		if running then
+			cycleShiftPress()
+		end
+	end
+end)
+
+local lastHoldTick = 0
+local function maintainShiftHold()
+	if not running then return end
+	if tick() - lastHoldTick >= 0.25 then
+		lastHoldTick = tick()
+		sendShiftDown()
+	end
+end
+
+local charAddedConn = LP.CharacterAdded:Connect(function()
+	task.wait(0.7)
+	if running then
+		table.clear(blacklist)
+		cycleShiftPress()
+	end
+end)
+
+-- ============================================================================
+-- 3. ПОИСК ПАПКИ PUMPKINS (БЕЗ ЛАГОВ И ПЕРЕБОРА ВСЕЙ КАРТЫ)
+-- ============================================================================
+local cachedPumpkinFolder = nil
+
+local function getPumpkinsFolder()
+	if cachedPumpkinFolder and cachedPumpkinFolder.Parent then
+		return cachedPumpkinFolder
+	end
+
+	-- 1) Workspace.Map.Pumpkins[cite: 1]
+	local map = Workspace:FindFirstChild("Map")
+	if map then
+		local f = map:FindFirstChild("Pumpkins") or map:FindFirstChild("pumpkins")
+		if f then
+			cachedPumpkinFolder = f
+			return f
+		end
+	end
+
+	-- 2) Workspace.Pumpkins напрямую
+	local direct = Workspace:FindFirstChild("Pumpkins") or Workspace:FindFirstChild("pumpkins")
+	if direct then
+		cachedPumpkinFolder = direct
+		return direct
+	end
+
+	-- 3) Если папка лежит внутри текущей карты раунда (на 1 уровень глубже)
+	for _, child in ipairs(Workspace:GetChildren()) do
+		if child:IsA("Folder") or child:IsA("Model") then
+			local sub = child:FindFirstChild("Pumpkins") or child:FindFirstChild("pumpkins")
+			if sub then
+				cachedPumpkinFolder = sub
+				return sub
+			end
+		end
+	end
+
+	return nil
+end
+
+local function getPart(m)
+	if not m then return nil end
+	if m:IsA("BasePart") then return m end
+	if m:IsA("Model") then
+		return m.PrimaryPart or m:FindFirstChildWhichIsA("BasePart", true)
+	end
+	return nil
+end
+
+local function getModelPos(m)
+	local p = getPart(m)
+	if p then return p.Position end
+	if m and m:IsA("Model") then
+		local ok, cf = pcall(function() return m:GetPivot() end)
+		if ok and cf then return cf.Position end
+	end
+	return nil
+end
+
+local function disablePumpkinCollision(m)
+	if not m then return end
+	if m:IsA("BasePart") then
+		m.CanCollide = false
+	elseif m:IsA("Model") then
+		for _, d in ipairs(m:GetDescendants()) do
+			if d:IsA("BasePart") then
+				d.CanCollide = false
+			end
+		end
+	end
+end
+
+local function getFlatDist(pos1, pos2)
+	return Vector2.new(pos1.X - pos2.X, pos1.Z - pos2.Z).Magnitude
+end
+
+-- Проверяем, реально ли тыква еще существует и не собрана
+local function isValidPumpkin(m)
+	if not m or not m.Parent then return false end
+	local folder = getPumpkinsFolder()
+	if folder and not m:IsDescendantOf(folder) then return false end
+
+	local p = getPart(m)
+	if not p or not p.Parent then return false end
+	if p.Transparency >= 0.95 then return false end
+
+	-- Если у тыквы есть ProximityPrompt или ClickDetector и они выключены после сбора — пропускаем
+	local pp = m:FindFirstChildWhichIsA("ProximityPrompt", true)
+	if pp and not pp.Enabled then return false end
+
+	return true
+end
+
+local function clearOne(m)
+	local d = draws[m]
+	if not d then return end
+	for _, x in pairs(d) do
+		if typeof(x) == "Instance" then
+			pcall(function() x:Destroy() end)
+		end
+	end
+	draws[m] = nil
+end
+
+local function clearAll()
+	for m in pairs(draws) do clearOne(m) end
+	if killerHL then pcall(function() killerHL:Destroy() end) killerHL = nil end
+	for _, c in ipairs(ESP_FOLDER:GetChildren()) do
+		pcall(function() c:Destroy() end)
+	end
+end
+
+local function addESP(model)
+	if draws[model] then return end
+	local part = getPart(model)
+	if not part then return end
+
+	disablePumpkinCollision(model)
+
+	local hl = Instance.new("Highlight")
+	hl.Name = "PumpkinHL"
+	hl.Adornee = model
+	hl.FillColor = Color3.fromRGB(255, 140, 0)
+	hl.OutlineColor = Color3.fromRGB(255, 220, 80)
+	hl.FillTransparency = 0.55
+	hl.OutlineTransparency = 0
+	hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+	hl.Parent = ESP_FOLDER
+
+	local bill = Instance.new("BillboardGui")
+	bill.Name = "PumpkinTag"
+	bill.Adornee = part
+	bill.Size = UDim2.fromOffset(200, 32)
+	bill.StudsOffset = Vector3.new(0, 2.5, 0)
+	bill.AlwaysOnTop = true
+	bill.MaxDistance = math.huge
+	bill.Parent = ESP_FOLDER
+
+	local lab = Instance.new("TextLabel")
+	lab.Size = UDim2.fromScale(1, 1)
+	lab.BackgroundTransparency = 1
+	lab.Text = model.Name
+	lab.TextColor3 = Color3.fromRGB(255, 200, 60)
+	lab.TextStrokeTransparency = 0.25
+	lab.Font = Enum.Font.GothamBold
+	lab.TextSize = 14
+	lab.Parent = bill
+
+	draws[model] = {hl = hl, bill = bill, lab = lab}
+end
+
+-- Сканирует ТОЛЬКО папку Pumpkins -> 0 лагов, мгновенное обновление[cite: 1]
+local function scanPumpkinsFolder()
+	local folder = getPumpkinsFolder()
+	if folder then
+		for _, ch in ipairs(folder:GetChildren()) do
+			if (ch:IsA("Model") or ch:IsA("BasePart")) and isValidPumpkin(ch) then
+				addESP(ch)
+			end
+		end
+	end
+
+	for m in pairs(draws) do
+		if not isValidPumpkin(m) then
+			clearOne(m)
+			blacklist[m] = nil
+		end
+	end
+end
+
+-- ============================================================================
+-- 4. ПРОВЕРКА KILLER
+-- ============================================================================
+local function isPlayerKiller(plr)
+	if not plr or plr == LP then return false end
+	if plr.Team and string.find(string.lower(plr.Team.Name), "killer") then
+		return true
+	end
+	local roleAttr = plr:GetAttribute("Team") or plr:GetAttribute("Role")
+	if typeof(roleAttr) == "string" and string.find(string.lower(roleAttr), "killer") then
+		return true
+	end
+	if plr.Character then
+		local cRole = plr.Character:GetAttribute("Team") or plr.Character:GetAttribute("Role")
+		if typeof(cRole) == "string" and string.find(string.lower(cRole), "killer") then
+			return true
+		end
+	end
+	return false
+end
+
+local function getKillerData()
+	local myChar = LP.Character
+	local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+	local nearestKillerHrp = nil
+	local nearestKillerChar = nil
+	local minDist = math.huge
+
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if isPlayerKiller(plr) and plr.Character then
+			local khrp = plr.Character:FindFirstChild("HumanoidRootPart") or plr.Character:FindFirstChildWhichIsA("BasePart")
+			local khum = plr.Character:FindFirstChildOfClass("Humanoid")
+			if khrp and (not khum or khum.Health > 0) then
+				local d = myHrp and (khrp.Position - myHrp.Position).Magnitude or 0
+				if d < minDist then
+					minDist = d
+					nearestKillerHrp = khrp
+					nearestKillerChar = plr.Character
+				end
+			end
+		end
+	end
+
+	if nearestKillerChar then
+		if not killerHL or killerHL.Parent ~= ESP_FOLDER then
+			if killerHL then pcall(function() killerHL:Destroy() end) end
+			killerHL = Instance.new("Highlight")
+			killerHL.Name = "KillerESP"
+			killerHL.FillColor = Color3.fromRGB(255, 0, 40)
+			killerHL.OutlineColor = Color3.fromRGB(255, 255, 255)
+			killerHL.FillTransparency = 0.25
+			killerHL.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+			killerHL.Parent = ESP_FOLDER
+		end
+		killerHL.Adornee = nearestKillerChar
+	elseif killerHL then
+		killerHL.Adornee = nil
+	end
+
+	return nearestKillerHrp, minDist
+end
+
+local function isSafeFromKiller(pos, killerHrp, radius)
+	if not killerHrp then return true end
+	return getFlatDist(pos, killerHrp.Position) >= (radius or CFG.KillerAvoidDist)
+end
+
+local function evadeKiller(hum, hrp, killerHrp)
+	if not hum or not hrp or not killerHrp then return end
+	local away = hrp.Position - killerHrp.Position
+	local flat = Vector3.new(away.X, 0, away.Z)
+	if flat.Magnitude < 0.1 then
+		flat = Vector3.new(1, 0, 0)
+	else
+		flat = flat.Unit
+	end
+	hum:MoveTo(hrp.Position + flat * 32)
+end
+
+-- ============================================================================
+-- 5. ВЫБОР ТЫКВЫ (НИКОГДА НЕ ОСТАНАВЛИВАЕТСЯ, СБРАСЫВАЕТ BLACKLIST ЕСЛИ НАДО)
+-- ============================================================================
+local function getTargetPumpkin(hrpPos)
+	scanPumpkinsFolder()
+	local killerHrp = getKillerData()
+
+	local function pickBest(ignoreBlacklist)
+		local bestSafe = nil
+		local bestSafeDist = math.huge
+		local fallback = nil
+		local fallbackDist = math.huge
+
+		for m in pairs(draws) do
+			local bl = blacklist[m] and blacklist[m] > tick()
+			if (ignoreBlacklist or not bl) and isValidPumpkin(m) then
+				local pos = getModelPos(m)
+				if pos then
+					local d = (pos - hrpPos).Magnitude
+					if isSafeFromKiller(pos, killerHrp, CFG.KillerAvoidDist) then
+						if d < bestSafeDist then
+							bestSafeDist = d
+							bestSafe = m
+						end
+					end
+					if d < fallbackDist then
+						fallbackDist = d
+						fallback = m
+					end
+				end
+			end
+		end
+		return bestSafe or fallback
+	end
+
+	local chosen = pickBest(false)
+	-- Если все оставшиеся тыквы попали во временный ЧС — мгновенно очищаем ЧС, чтобы персонаж НЕ ВСТАВАЛ НА МЕСТЕ!
+	if not chosen then
+		table.clear(blacklist)
+		chosen = pickBest(true)
+	end
+
+	for m, d in pairs(draws) do
+		local pos = getModelPos(m)
+		if pos and d.hl and d.lab then
+			local dist = math.floor((pos - hrpPos).Magnitude)
+			if m == chosen then
+				d.hl.FillColor = Color3.fromRGB(0, 255, 100)
+				d.hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+				d.hl.FillTransparency = 0.20
+				d.lab.TextColor3 = Color3.fromRGB(80, 255, 120)
+				d.lab.TextSize = 16
+				d.lab.Text = string.format(">>> БЛИЖАЙШАЯ [%d м] <<<", dist)
+			else
+				d.hl.FillColor = Color3.fromRGB(255, 140, 0)
+				d.hl.OutlineColor = Color3.fromRGB(255, 220, 80)
+				d.hl.FillTransparency = 0.55
+				d.lab.TextColor3 = Color3.fromRGB(255, 200, 60)
+				d.lab.TextSize = 13
+				d.lab.Text = string.format("Pumpkin [%d м]", dist)
+			end
+		end
+	end
+
+	return chosen
+end
+
+-- ============================================================================
+-- 6. ДВИЖЕНИЕ С ЗАЩИТОЙ ОТ ЗАВИСАНИЯ НАВМЕША И ПРОХОДОМ СКВОЗЬ ФЕЙК-СТЕНЫ
+-- ============================================================================
+local function unstickWalk(hum, hrp)
+	local angle = math.rad(math.random(75, 165) * (math.random(0, 1) == 0 and 1 or -1))
+	local c, s = math.cos(angle), math.sin(angle)
+	local look = hrp.CFrame.LookVector
+	local dir = Vector3.new(look.X * c - look.Z * s, 0, look.X * s + look.Z * c)
+	hum:MoveTo(hrp.Position + dir * 8)
+	task.wait(0.35)
+end
+
+-- ComputeAsync с жестким таймаутом 0.45 сек, чтобы скрипт НИКОГДА не зависал на месте
+local function computeWaypointsSafe(startPos, goalPos)
+	local finished = false
+	local resultWps = nil
+
+	task.spawn(function()
+		local path = PathfindingService:CreatePath({
+			AgentRadius = 2.0,
+			AgentHeight = 5.0,
+			AgentCanJump = false,
+			AgentCanClimb = false,
+			WaypointSpacing = 3.5
+		})
+		local ok = pcall(function()
+			path:ComputeAsync(startPos, goalPos)
+		end)
+		if ok and path.Status == Enum.PathStatus.Success then
+			resultWps = path:GetWaypoints()
+		end
+		finished = true
+	end)
+
+	local t0 = tick()
+	while not finished and (tick() - t0 < 0.45) do
+		task.wait(0.03)
+	end
+
+	return resultWps
+end
+
+local function stepAndInteract(targetModel)
+	local targetPos = getModelPos(targetModel)
+	if not targetPos then return end
+	local part = getPart(targetModel)
+
+	local char = LP.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not hrp or not hum then return end
+
+	disablePumpkinCollision(targetModel)
+
+	local t0 = tick()
+	while running and CFG.Enabled and isValidPumpkin(targetModel) and (tick() - t0 < 0.85) do
+		targetPos = getModelPos(targetModel) or targetPos
+		if getFlatDist(hrp.Position, targetPos) <= CFG.ReachDist then
+			break
+		end
+		hum:MoveTo(Vector3.new(targetPos.X, hrp.Position.Y, targetPos.Z))
+		task.wait(0.04)
+	end
+
+	if getFlatDist(hrp.Position, targetPos) <= 4.0 then
+		hrp.CFrame = CFrame.new(targetPos.X, hrp.Position.Y, targetPos.Z) * hrp.CFrame.Rotation
+	end
+	hum:MoveTo(hrp.Position)
+
+	if fireclickdetector then
+		local cd = targetModel:FindFirstChildWhichIsA("ClickDetector", true) or (part and part:FindFirstChildWhichIsA("ClickDetector", true))
+		if cd then pcall(fireclickdetector, cd) end
+	end
+	if fireproximityprompt then
+		local pp = targetModel:FindFirstChildWhichIsA("ProximityPrompt", true) or (part and part:FindFirstChildWhichIsA("ProximityPrompt", true))
+		if pp then pcall(fireproximityprompt, pp) end
+	end
+
+	for i = 1, CFG.ClickCount do
+		if not running or not CFG.Enabled then break end
+		if not isValidPumpkin(targetModel) then break end
+
+		targetPos = getModelPos(targetModel) or targetPos
+		disablePumpkinCollision(targetModel)
+		hum:MoveTo(Vector3.new(targetPos.X, hrp.Position.Y, targetPos.Z))
+
+		if mouse1click then
+			pcall(mouse1click)
+		elseif VirtualInputManager then
+			local cam = Workspace.CurrentCamera
+			local vp = cam and cam.ViewportSize or Vector2.new(800, 600)
+			local cx, cy = vp.X / 2, vp.Y / 2
+			pcall(function()
+				VirtualInputManager:SendMouseButtonEvent(cx, cy, 0, true, game, 1)
+				task.wait(0.04)
+				VirtualInputManager:SendMouseButtonEvent(cx, cy, 0, false, game, 1)
+			end)
+		end
+		task.wait(CFG.ClickDelay)
+	end
+end
+
+local function walkToTarget(targetModel)
+	local char = LP.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	local targetPos = getModelPos(targetModel)
+	if not hum or not hrp or not targetPos or hum.Health <= 0 then return false end
+
+	disablePumpkinCollision(targetModel)
+
+	if getFlatDist(hrp.Position, targetPos) <= CFG.ReachDist then
+		return true
+	end
+
+	-- Если между нами и тыквой только стены без коллизии (или вообще чисто) — идем напрямую не боясь фейк-стен!
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+	rayParams.FilterDescendantsInstances = {char, targetModel}
+	rayParams.RespectCanCollide = true -- Игнорирует ВСЕ объекты с CanCollide = false!
+
+	local toTarget = targetPos - hrp.Position
+	local flatVec = Vector3.new(toTarget.X, 0, toTarget.Z)
+	if flatVec.Magnitude <= 65 then
+		local hit = Workspace:Raycast(hrp.Position, flatVec.Unit * math.min(flatVec.Magnitude, 65), rayParams)
+		if not hit then
+			local directStart = tick()
+			local lastPos = hrp.Position
+			while running and CFG.Enabled and isValidPumpkin(targetModel) and (tick() - directStart < 3.0) do
+				local kHrp, kD = getKillerData()
+				if kHrp and kD <= CFG.KillerDangerDist then
+					evadeKiller(hum, hrp, kHrp)
+					return false
+				end
+				targetPos = getModelPos(targetModel) or targetPos
+				if getFlatDist(hrp.Position, targetPos) <= CFG.ReachDist then
+					return true
+				end
+				hum:MoveTo(targetPos)
+				if tick() - directStart > 0.55 and (hrp.Position - lastPos).Magnitude < 0.25 then
+					break
+				end
+				lastPos = hrp.Position
+				task.wait(0.05)
+			end
+			if getFlatDist(hrp.Position, targetPos) <= CFG.ReachDist then
+				return true
+			end
+		end
+	end
+
+	-- Иначе идем по вейпоинтам с защитой от зависаний
+	local waypoints = computeWaypointsSafe(hrp.Position, targetPos)
+	if not waypoints or #waypoints < 2 then
+		-- Если навмеш не построился — идем напрямую к тыкве 2 секунды
+		local t0 = tick()
+		local lastPos = hrp.Position
+		while running and CFG.Enabled and isValidPumpkin(targetModel) and (tick() - t0 < 2.2) do
+			targetPos = getModelPos(targetModel) or targetPos
+			if getFlatDist(hrp.Position, targetPos) <= CFG.ReachDist then
+				return true
+			end
+			hum:MoveTo(targetPos)
+			if tick() - t0 > 0.55 and (hrp.Position - lastPos).Magnitude < 0.25 then
+				unstickWalk(hum, hrp)
+				break
+			end
+			lastPos = hrp.Position
+			task.wait(0.05)
+		end
+		return getFlatDist(hrp.Position, targetPos) <= CFG.ReachDist
+	end
+
+	for i = 2, #waypoints do
+		local wp = waypoints[i]
+		if not running or not CFG.Enabled or not isValidPumpkin(targetModel) then
+			return false
+		end
+		if hum.Health <= 0 then return false end
+
+		local kHrp, kD = getKillerData()
+		if kHrp and kD <= CFG.KillerDangerDist then
+			evadeKiller(hum, hrp, kHrp)
+			return false
+		end
+		if kHrp and not isSafeFromKiller(wp.Position, kHrp, CFG.KillerDangerDist + 4) then
+			blacklist[targetModel] = tick() + 3.0
+			return false
+		end
+
+		targetPos = getModelPos(targetModel) or targetPos
+		if getFlatDist(hrp.Position, targetPos) <= CFG.ReachDist then
+			return true
+		end
+
+		hum:MoveTo(wp.Position)
+		local stepStart = tick()
+		local lastPos = hrp.Position
+
+		while running and CFG.Enabled do
+			targetPos = getModelPos(targetModel) or targetPos
+			if getFlatDist(hrp.Position, targetPos) <= CFG.ReachDist then
+				return true
+			end
+			if getFlatDist(hrp.Position, wp.Position) <= 2.6 then
+				break
+			end
+			if i == #waypoints and getFlatDist(hrp.Position, targetPos) <= 5.0 then
+				hum:MoveTo(targetPos)
+			end
+			if tick() - stepStart > 0.50 and (hrp.Position - lastPos).Magnitude < 0.30 then
+				unstickWalk(hum, hrp)
+				return false
+			end
+			if tick() - stepStart > CFG.WaypointTimeout then
+				unstickWalk(hum, hrp)
+				return false
+			end
+			lastPos = hrp.Position
+			task.wait(0.05)
+		end
+	end
+
+	return getFlatDist(hrp.Position, targetPos) <= (CFG.ReachDist + 0.6)
+end
+
+-- ============================================================================
+-- 7. ОСНОВНОЙ БЕЗОТКАЗНЫЙ ЦИКЛ (ЗАЩИЩЕН PCALL, НИКОГДА НЕ ПАДАЕТ)
+-- ============================================================================
+task.spawn(function()
+	local failCounts = {}
+	while running do
+		if CFG.Enabled then
+			pcall(function()
+				local char = LP.Character
+				local hrp = char and char:FindFirstChild("HumanoidRootPart")
+				local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+				if hrp and hum and hum.Health > 0 then
+					if hum.Sit then hum.Sit = false end
+
+					local killerHrp, kDist = getKillerData()
+					if killerHrp and kDist <= CFG.KillerDangerDist then
+						evadeKiller(hum, hrp, killerHrp)
+						task.wait(0.15)
+					else
+						local target = getTargetPumpkin(hrp.Position)
+						if target then
+							local reached = walkToTarget(target)
+							if reached and isValidPumpkin(target) then
+								stepAndInteract(target)
+								failCounts[target] = 0
+								-- Короткий ЧС на 2 секунды, если тыква исчезает с задержкой сервера
+								blacklist[target] = tick() + 2.0
+							else
+								failCounts[target] = (failCounts[target] or 0) + 1
+								if failCounts[target] >= 2 then
+									blacklist[target] = tick() + 3.5
+									failCounts[target] = 0
+								end
+							end
+						end
+					end
+				end
+			end)
+		end
+		task.wait(0.08)
+	end
+end)
+
+scanPumpkinsFolder()
+
+local rsConn = RunService.RenderStepped:Connect(function()
+	maintainShiftHold()
+end)
+
+local lastScan = 0
+local hbConn = RunService.Heartbeat:Connect(function()
+	maintainShiftHold()
+	if tick() - lastScan >= CFG.ScanInterval then
+		lastScan = tick()
+		pcall(scanPumpkinsFolder)
+	end
+end)
+
+local inputConn = UserInputService.InputBegan:Connect(function(input, gpe)
+	if gpe then return end
+	if input.KeyCode == CFG.ToggleKey then
+		CFG.Enabled = not CFG.Enabled
+		print("[PumpkinFarm VD] AutoFarm:", CFG.Enabled and "ON (Pumpkins Folder Only)" or "PAUSED")
+	end
+end)
+
+local function stopAll()
+	running = false
+	CFG.Enabled = false
+	if rsConn then rsConn:Disconnect() end
+	if hbConn then hbConn:Disconnect() end
+	if inputConn then inputConn:Disconnect() end
+	if idledConn then idledConn:Disconnect() end
+	if charAddedConn then charAddedConn:Disconnect() end
+	sendShiftUp()
+	clearAll()
+	print("[PumpkinFarm VD] Полностью остановлен.")
+end
+
+_G.PumpkinESP_Stop = stopAll
+_G.PumpkinFarm_Stop = stopAll
+print("[PumpkinFarm VD] ЗАПУЩЕН | ПРОВЕРКА ТОЛЬКО ПАПКИ PUMPKINS | НЕ ЗАВИСАЕТ | F6")
